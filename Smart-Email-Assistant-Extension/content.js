@@ -1,43 +1,116 @@
 console.log("Email Writer.....")
 
-function injectButton(){
-    const selector = ['.aDh, .btC, [role="dialog"]','.gU.Up' ];
-    for(const selector of selector){
-        const toolbar = document.querySelector(selector);
-        if(toolbar){
-            return toolbar;
+function getEmailContent() {
+    const selectors = [
+        '.h7',
+        '.a3s.aiL',
+        '.gmail_quote',
+        '[role ="presentation"]'
+    ];
+
+    for(const selector of selectors){
+        const content = document.querySelector(selector);
+        if(content){
+            return content.innerText.trim();
         }
-        return null;
+        return '';
     }
+    
 }
 
-function createAIButton(){
+// ------------------------------
+// 1. FIND COMPOSE TOOLBAR
+// ------------------------------
+function findComposeToolbar() {
+    const selectors = ['.btC', '.aDh', '[role="toolbar"]', '.gU.Up'];
+    
+    for (const selector of selectors) {
+        const toolbar = document.querySelector(selector);
+        if (toolbar) {
+            return toolbar;
+        } 
+        return null;
+    }
+   
+}
+
+// ------------------------------
+// 2. CREATE AI BUTTON
+// ------------------------------
+function createAIButton() {
     const button = document.createElement('div');
     button.className = 'T-I J-J5-Ji aoO v7 T-I-at1 L3';
     button.style.marginRight = '8px';
     button.innerHTML = 'AI Reply';
-    button.setAttribute('role','button');
+    button.setAttribute('role', 'button');
     button.setAttribute('data-tooltip', 'Generate AI Reply');
+    return button;
 }
 
-const observer = new MutationObserver((mutations)=>{
-    for(const mutation of mutations){
+// ------------------------------
+// 3. INJECT BUTTON
+// ------------------------------
+function injectButton() {
+    const existingButton = document.querySelector('.ai-reply-button');
+    if (existingButton) existingButton.remove();
+
+    const toolbar = findComposeToolbar();
+    if (!toolbar) {
+        console.log("Toolbar not found..");
+        return;
+    }
+
+    console.log("Toolbar found");
+    const button = createAIButton();
+    button.classList.add('.ai-reply-button');
+
+    button.addEventListener('click',async () =>{
+        try{
+            button.innerHTML = 'Generating...';
+            button.disabled = true;
+            const emailContent = getEmailContent();
+
+            const response = await fetch('', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    emailContent: emailContent,
+                    tone: "professional"
+                })
+            });
+        
+        } catch(error){
+
+        }
+    })
+
+    toolbar.insertBefore(button, toolbar.firstChild)
+}
+
+// ------------------------------
+// 4. OBSERVER
+// ------------------------------
+const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
         const addedNodes = Array.from(mutation.addedNodes);
+
         const hasComposeElements = addedNodes.some(node =>
             node.nodeType === Node.ELEMENT_NODE &&
-            (node.matches('.aDh, .btC, [role="dialog"]')
-            || node.querySelector('.aDh, .btC, [role = "dialog"]')
-        )
+            (
+                node.matches('.aDh, .btC, [role="dialog"]') ||
+                node.querySelector?.('.aDh, .btC,  [role="dialog"]')
+            )
         );
 
-        if(hasComposeElements){
-            console.log("Compose Window Detected.")
-            setTimeout(injectButton, 500)
+        if (hasComposeElements) {
+            console.log("Compose Window Detected.");
+            setTimeout(injectButton, 500);
         }
     }
 });
 
 observer.observe(document.body, {
-    childList: true, 
+    childList: true,
     subtree: true
-})
+});
