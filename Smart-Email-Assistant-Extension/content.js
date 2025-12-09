@@ -70,7 +70,7 @@ function injectButton() {
             button.disabled = true;
             const emailContent = getEmailContent();
 
-            const response = await fetch('', {
+            const response = await fetch('http://localhost:8080/api/email/generate', {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -79,7 +79,20 @@ function injectButton() {
                     tone: "professional"
                 })
             });
+            if(!response.ok){
+                throw new Error("API Request Failed..");
+            }
         
+            const generateReply = await response.text();
+
+            const composeBox = document.querySelector(
+                '[role = "textbox"][g_editable="true"]'
+            );
+
+            if(composeBox){
+                composeBox.focus();
+                document.execCommand('insertText', false, generatedReply);
+            }
         } catch(error){
 
         }
